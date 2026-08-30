@@ -16,7 +16,7 @@ export function buildServer(config: AppConfig): { server: McpServer; enabled: st
   const client = new PerconaClient(config.connection);
   const ctx: ToolContext = { client, policy, defaultNamespace: config.defaultNamespace };
 
-  const server = new McpServer({ name: "mcp-percona-pg", version: "0.1.0" });
+  const server = new McpServer({ name: "mcp-percona-pg", version: "0.1.1" });
 
   const enabled: string[] = [];
   for (const tool of ALL_TOOLS) {
