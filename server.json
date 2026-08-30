@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.dockndevai/mcp-percona-pg",
+  "description": "Manage Percona PostgreSQL + PgBouncer on Kubernetes — safe-by-default access modes and guards.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/dockndevai/mcp-percona-pg",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@dockndevai/mcp-percona-pg",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "KUBECONFIG_PATH",
+          "description": "Path to a kube-config file that can reach the Percona Operator namespaces (empty = default resolution).",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "PERCONA_MODE",
+          "description": "Access mode: read-only | read-write | admin.",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "PERCONA_NAMESPACE",
+          "description": "Default namespace for PerconaPGCluster resources when a tool omits one.",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
