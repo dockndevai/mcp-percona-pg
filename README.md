@@ -28,6 +28,7 @@ Safe by default: it starts **read-only**, can be scoped to an allowlist of names
 | Restore / upgrade / delete | `PERCONA_ALLOW_RESTORE`, `PERCONA_ALLOW_UPGRADE`, `PERCONA_ALLOW_DELETE` | separate opt-ins on top of admin mode |
 | Confirmation | `PERCONA_REQUIRE_CONFIRMATION` | high-impact ops require echoing the cluster name |
 | Dry-run / audit | `PERCONA_DRY_RUN`, `PERCONA_AUDIT_LOG` | validate-only; JSON audit line per guarded op |
+| Interactive confirmation | *(automatic)* | destructive & high-impact ops prompt the human to approve via MCP elicitation before running; fall back to the `PERCONA_ALLOW_*` gates when the client can't elicit |
 
 ## Tools
 
