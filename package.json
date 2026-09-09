@@ -1,7 +1,7 @@
 {
   "name": "@dockndevai/mcp-percona-pg",
   "mcpName": "io.github.dockndevai/mcp-percona-pg",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Model Context Protocol server for the Percona Operator for PostgreSQL — manage PostgreSQL + PgBouncer clusters, pooling, backups/PITR, and DR with security modes and access-control flags.",
   "type": "module",
   "license": "MIT",

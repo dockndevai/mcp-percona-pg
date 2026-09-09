@@ -37,7 +37,7 @@ export const adminTools: ToolDef[] = [
         ...contextArg,
       },
     },
-    handler: async (args, { client, policy, defaultNamespace }) => {
+    handler: async (args, { client, policy, defaultNamespace, confirm }) => {
       const name = args.name as string;
       const namespace = resolveNamespace(args.namespace, { defaultNamespace } as any);
       const context = args.context as string | undefined;
@@ -63,6 +63,8 @@ export const adminTools: ToolDef[] = [
         spec: { pgCluster: name, repoName, options },
       };
       if (dryRun) return textResult(`[dry-run] Would create PerconaPGRestore for ${name} (${repoName}, ${options.join(" ")}).`);
+      const ok = await confirm.confirm({ action: "restore cluster (OVERWRITES its data)", target: name, details: { namespace, repo: repoName, type } });
+      if (!ok.approved) return textResult(`Restore cancelled — ${ok.reason}.`);
       const created = (await client.createRestore(namespace, body, context)) as Record<string, any>;
       return jsonResult({ restoring: true, restore: created.metadata?.name, cluster: name, repoName, options, namespace });
     },
@@ -82,7 +84,7 @@ export const adminTools: ToolDef[] = [
         ...contextArg,
       },
     },
-    handler: async (args, { client, policy, defaultNamespace }) => {
+    handler: async (args, { client, policy, defaultNamespace, confirm }) => {
       const name = args.name as string;
       const namespace = resolveNamespace(args.namespace, { defaultNamespace } as any);
       const context = args.context as string | undefined;
@@ -97,6 +99,8 @@ export const adminTools: ToolDef[] = [
       });
       const patch = { spec: { standby: { enabled: false } } };
       if (dryRun) return textResult(`[dry-run] Would promote standby ${namespace}/${name} (standby.enabled=false).`);
+      const ok = await confirm.confirm({ action: "promote standby to primary", target: name, details: { namespace } });
+      if (!ok.approved) return textResult(`Promotion cancelled — ${ok.reason}.`);
       await client.patchCluster(name, namespace, patch, context);
       return jsonResult({ promoted: true, name, namespace });
     },
@@ -121,7 +125,7 @@ export const adminTools: ToolDef[] = [
         ...contextArg,
       },
     },
-    handler: async (args, { client, policy, defaultNamespace }) => {
+    handler: async (args, { client, policy, defaultNamespace, confirm }) => {
       const name = args.name as string;
       const namespace = resolveNamespace(args.namespace, { defaultNamespace } as any);
       const context = args.context as string | undefined;
@@ -149,6 +153,12 @@ export const adminTools: ToolDef[] = [
         },
       };
       if (dryRun) return textResult(`[dry-run] Would create PerconaPGUpgrade for ${name} (${args.fromPostgresVersion}→${args.toPostgresVersion}).`);
+      const ok = await confirm.confirm({
+        action: "major-version upgrade",
+        target: name,
+        details: { namespace, from: args.fromPostgresVersion as number, to: args.toPostgresVersion as number },
+      });
+      if (!ok.approved) return textResult(`Upgrade cancelled — ${ok.reason}.`);
       const created = (await client.createUpgrade(namespace, body, context)) as Record<string, any>;
       return jsonResult({ upgrading: true, upgrade: created.metadata?.name, cluster: name, namespace });
     },
@@ -166,7 +176,7 @@ export const adminTools: ToolDef[] = [
         ...contextArg,
       },
     },
-    handler: async (args, { client, policy, defaultNamespace }) => {
+    handler: async (args, { client, policy, defaultNamespace, confirm }) => {
       const name = args.name as string;
       const namespace = resolveNamespace(args.namespace, { defaultNamespace } as any);
       const context = args.context as string | undefined;
@@ -178,6 +188,8 @@ export const adminTools: ToolDef[] = [
         destructive: true,
       });
       if (dryRun) return textResult(`[dry-run] Would delete PerconaPGBackup ${namespace}/${name}.`);
+      const ok = await confirm.confirm({ action: "delete backup", target: name, details: { namespace } });
+      if (!ok.approved) return textResult(`Deletion cancelled — ${ok.reason}.`);
       await client.deleteBackup(name, namespace, context);
       return jsonResult({ deleted: true, backup: name, namespace });
     },
@@ -197,7 +209,7 @@ export const adminTools: ToolDef[] = [
         ...contextArg,
       },
     },
-    handler: async (args, { client, policy, defaultNamespace }) => {
+    handler: async (args, { client, policy, defaultNamespace, confirm }) => {
       const name = args.name as string;
       const namespace = resolveNamespace(args.namespace, { defaultNamespace } as any);
       const context = args.context as string | undefined;
@@ -212,6 +224,8 @@ export const adminTools: ToolDef[] = [
         confirmProvided: args.confirm as string | undefined,
       });
       if (dryRun) return textResult(`[dry-run] Would delete PerconaPGCluster ${namespace}/${name}.`);
+      const ok = await confirm.confirm({ action: "delete cluster (PostgreSQL, PgBouncer, and its data)", target: name, details: { namespace } });
+      if (!ok.approved) return textResult(`Deletion cancelled — ${ok.reason}.`);
       await client.deleteCluster(name, namespace, context);
       return jsonResult({ deleted: true, cluster: name, namespace });
     },

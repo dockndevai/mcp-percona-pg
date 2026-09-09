@@ -2,6 +2,7 @@ import { ApiException } from "@kubernetes/client-node";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AppConfig } from "./config.js";
 import { PerconaClient } from "./percona/client.js";
+import { makeConfirmer } from "./elicit.js";
 import { PolicyError, SecurityPolicy } from "./security.js";
 import { adminTools } from "./tools/admin.js";
 import { annotationsFor } from "./tools/annotations.js";
@@ -14,9 +15,8 @@ export const ALL_TOOLS: ToolDef[] = [...readTools, ...writeTools, ...adminTools]
 export function buildServer(config: AppConfig): { server: McpServer; enabled: string[] } {
   const policy = new SecurityPolicy(config.security);
   const client = new PerconaClient(config.connection);
-  const ctx: ToolContext = { client, policy, defaultNamespace: config.defaultNamespace };
-
-  const server = new McpServer({ name: "mcp-percona-pg", version: "0.1.2" });
+  const server = new McpServer({ name: "mcp-percona-pg", version: "0.2.0" });
+  const ctx: ToolContext = { client, policy, defaultNamespace: config.defaultNamespace, confirm: makeConfirmer(server) };
 
   const enabled: string[] = [];
   for (const tool of ALL_TOOLS) {
