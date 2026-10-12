@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-10-12
+
+### Security
+- `npm audit fix`: resolves a high-severity `@modelcontextprotocol/sdk` advisory (OAuth client could send credentials to an attacker-chosen authorization server) plus transitive moderate/high/critical advisories in `hono`, `ip-address`, `proxy-addr`, and `source-map-js`. `npm audit` reports 0 vulnerabilities.
+
+### Changed
+- Take in-range patch/minor bumps: `@types/node`, `tsx`, `vitest`, `zod`. No API or behavior changes; typecheck, build, and test suite pass.
+
 ## [0.3.0] - 2026-09-29
 
 ### Added
