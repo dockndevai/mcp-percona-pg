@@ -16,9 +16,14 @@ export const ALL_TOOLS: ToolDef[] = [...readTools, ...writeTools, ...adminTools]
 export function buildServer(config: AppConfig): { server: McpServer; enabled: string[] } {
   const policy = new SecurityPolicy(config.security);
   const client = new PerconaClient(config.connection);
-  const server = new McpServer({ name: "mcp-percona-pg", version: "0.3.5" });
+  const server = new McpServer({ name: "mcp-percona-pg", version: "0.4.0" });
   const guard = new GuardClient(loadGuardConfig());
-  const ctx: ToolContext = { client, policy, defaultNamespace: config.defaultNamespace, confirm: makeConfirmer(server), guard };
+  const confirmer = makeConfirmer(server, {
+    name: "mcp-percona-pg",
+    requireHuman: config.security.requireHumanApproval,
+    audit: config.security.auditLog,
+  });
+  const ctx: ToolContext = { client, policy, defaultNamespace: config.defaultNamespace, confirm: confirmer, guard };
 
   const enabled: string[] = [];
   for (const tool of ALL_TOOLS) {
@@ -31,11 +36,13 @@ export function buildServer(config: AppConfig): { server: McpServer; enabled: st
       { ...tool.config, annotations: annotationsFor(tool) },
       async (args: Record<string, unknown>) => {
         try {
+          // Every approval prompt in this call is bound to this tool + these exact arguments.
+          const callCtx: ToolContext = { ...ctx, confirm: confirmer.forCall(tool.name, args ?? {}) };
           // laya-guard: assess every mutating op before it runs (no-op unless *_GUARD_MODE is set).
           if (tool.capability !== "read") {
-            await guard.enforce({ tool: tool.name, command: `${tool.name} ${JSON.stringify(args ?? {})}`, context: tool.name }, ctx.confirm);
+            await guard.enforce({ tool: tool.name, command: `${tool.name} ${JSON.stringify(args ?? {})}`, context: tool.name }, callCtx.confirm);
           }
-          return await tool.handler(args ?? {}, ctx);
+          return await tool.handler(args ?? {}, callCtx);
         } catch (err) {
           return toErrorResult(err);
         }
