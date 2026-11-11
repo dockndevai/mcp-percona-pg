@@ -23,6 +23,16 @@ grant it the least access it needs.
   admin mode.
 - **Require confirmation.** With `PERCONA_REQUIRE_CONFIRMATION=true` (default),
   restore, promote, upgrade, and delete require echoing the exact cluster name.
+- **Require a human for destructive ops.** Set `PERCONA_REQUIRE_HUMAN_APPROVAL=true` so
+  `restore_cluster`, `promote_standby`, `upgrade_cluster`, `delete_backup` and `delete_cluster` are refused
+  when the client cannot show an approval prompt. Each approval is bound to the exact tool and arguments
+  (fingerprint) and to the target's version: the object's `uid` plus a hash of its `spec` (the `status` the
+  operator rewrites continuously is deliberately excluded, as are labels, annotations and finalizers). If the
+  target changed or was recreated while the human was deciding, the action is refused; `delete_cluster` and
+  `delete_backup` additionally send the approved `uid` as a delete precondition. `delete_cluster` also asks
+  the human to type the cluster name. Reading the version needs the `get` verb on the resource; if that read
+  fails the approval is not version-bound. Approval receipts are written to the audit log
+  (`"audit":"approval"`, with `approvedBy` = `human` or `flag-only`).
 - **Preview with dry-run.** `PERCONA_DRY_RUN=true` validates and logs write
   intent (including the exact patch) without contacting the cluster.
 - **Keep the audit log on.** `PERCONA_AUDIT_LOG=true` (default) writes a JSON

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { uidOf } from "../percona/client.js";
 import type { ToolDef } from "./types.js";
 import { jsonResult, resolveNamespace, textResult } from "./types.js";
 
@@ -63,7 +64,12 @@ export const adminTools: ToolDef[] = [
         spec: { pgCluster: name, repoName, options },
       };
       if (dryRun) return textResult(`[dry-run] Would create PerconaPGRestore for ${name} (${repoName}, ${options.join(" ")}).`);
-      const ok = await confirm.confirm({ action: "restore cluster (OVERWRITES its data)", target: name, details: { namespace, repo: repoName, type } });
+      const ok = await confirm.confirm({
+        action: "restore cluster (OVERWRITES its data)",
+        target: name,
+        details: { namespace, repo: repoName, type, pitrTarget: target },
+        probe: () => client.clusterVersion(name, namespace, context),
+      });
       if (!ok.approved) return textResult(`Restore cancelled — ${ok.reason}.`);
       const created = (await client.createRestore(namespace, body, context)) as Record<string, any>;
       return jsonResult({ restoring: true, restore: created.metadata?.name, cluster: name, repoName, options, namespace });
@@ -99,7 +105,12 @@ export const adminTools: ToolDef[] = [
       });
       const patch = { spec: { standby: { enabled: false } } };
       if (dryRun) return textResult(`[dry-run] Would promote standby ${namespace}/${name} (standby.enabled=false).`);
-      const ok = await confirm.confirm({ action: "promote standby to primary", target: name, details: { namespace } });
+      const ok = await confirm.confirm({
+        action: "promote standby to primary",
+        target: name,
+        details: { namespace },
+        probe: () => client.clusterVersion(name, namespace, context),
+      });
       if (!ok.approved) return textResult(`Promotion cancelled — ${ok.reason}.`);
       await client.patchCluster(name, namespace, patch, context);
       return jsonResult({ promoted: true, name, namespace });
@@ -157,6 +168,7 @@ export const adminTools: ToolDef[] = [
         action: "major-version upgrade",
         target: name,
         details: { namespace, from: args.fromPostgresVersion as number, to: args.toPostgresVersion as number },
+        probe: () => client.clusterVersion(name, namespace, context),
       });
       if (!ok.approved) return textResult(`Upgrade cancelled — ${ok.reason}.`);
       const created = (await client.createUpgrade(namespace, body, context)) as Record<string, any>;
@@ -188,9 +200,15 @@ export const adminTools: ToolDef[] = [
         destructive: true,
       });
       if (dryRun) return textResult(`[dry-run] Would delete PerconaPGBackup ${namespace}/${name}.`);
-      const ok = await confirm.confirm({ action: "delete backup", target: name, details: { namespace } });
+      const ok = await confirm.confirm({
+        action: "delete backup",
+        target: name,
+        details: { namespace },
+        probe: () => client.backupVersion(name, namespace, context),
+      });
       if (!ok.approved) return textResult(`Deletion cancelled — ${ok.reason}.`);
-      await client.deleteBackup(name, namespace, context);
+      // The approved object's uid becomes a delete precondition: the API server refuses if it was recreated.
+      await client.deleteBackup(name, namespace, context, false, uidOf(ok.receipt.version));
       return jsonResult({ deleted: true, backup: name, namespace });
     },
   },
@@ -224,9 +242,16 @@ export const adminTools: ToolDef[] = [
         confirmProvided: args.confirm as string | undefined,
       });
       if (dryRun) return textResult(`[dry-run] Would delete PerconaPGCluster ${namespace}/${name}.`);
-      const ok = await confirm.confirm({ action: "delete cluster (PostgreSQL, PgBouncer, and its data)", target: name, details: { namespace } });
+      const ok = await confirm.confirm({
+        action: "delete cluster (PostgreSQL, PgBouncer, and its data)",
+        target: name,
+        details: { namespace },
+        typed: true,
+        probe: () => client.clusterVersion(name, namespace, context),
+      });
       if (!ok.approved) return textResult(`Deletion cancelled — ${ok.reason}.`);
-      await client.deleteCluster(name, namespace, context);
+      // The approved object's uid becomes a delete precondition: the API server refuses if it was recreated.
+      await client.deleteCluster(name, namespace, context, false, uidOf(ok.receipt.version));
       return jsonResult({ deleted: true, cluster: name, namespace });
     },
   },

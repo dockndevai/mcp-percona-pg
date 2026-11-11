@@ -62,6 +62,7 @@ export function loadConfig(): AppConfig {
       requireConfirmation: bool("PERCONA_REQUIRE_CONFIRMATION", true),
       dryRun: bool("PERCONA_DRY_RUN", false),
       auditLog: bool("PERCONA_AUDIT_LOG", true),
+      requireHumanApproval: bool("PERCONA_REQUIRE_HUMAN_APPROVAL", false),
     },
   };
 }
